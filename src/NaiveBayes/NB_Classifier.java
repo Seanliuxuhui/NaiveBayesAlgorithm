@@ -1,5 +1,166 @@
 package NaiveBayes;
 
-public class NB_Classifier {
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
 
+public class NB_Classifier {
+	private Map<String, HashMap<String, String>> attrmap = new HashMap<>(); 
+	private Map<String, HashMap<String, Double>> probTable = new Hashtable<>();
+	private CF_Tree cf_t = new CF_Tree();
+	public void classifier_build(int attrIndex, MyDB db){
+		List<String> attrNames = db.getAttributes();
+		String selectedAttr = attrNames.get(attrIndex);
+		
+		int i = 1;
+		for(String attrName: db.getAttributes()){
+			int j = 1;
+			HashMap<String, String> attrValueMap = new HashMap<String, String>();
+			for(String attrValue: db.getAttributeValue(attrName)){
+				attrValueMap.put(attrValue, i + "." + j);
+				attrmap.put(attrName, attrValueMap);
+				j++;
+			}
+			i++;
+		}
+		
+		int row = 1;
+		while(db.getContent(row) != null){
+			List<String> content = db.getContent(row);
+			String first = this.attrmap.get(selectedAttr).get(content.get(attrIndex -1));
+			
+			for(int col = content.size() - 1; col > 0; col--){
+				String second = this.attrmap.get(attrNames.get(col)).get(content.get(col));
+				int count = cf_t.getOccurrence(first, second) == 0 ? 0 : cf_t.getOccurrence(first, second) + 1;
+				cf_t.insert( first, second, count);
+			}
+			row++;
+		}
+	}
+	public void prob_table_build(int attrIndex, MyDB db){
+		for(String attrName: db.getAttributes()){
+			HashMap<String, Double> tmp = new HashMap<String, Double>();
+			for(String attrValue: db.getAttributeValue(attrName)){
+				for(String selectedAttrValue: this.attrmap.get(db.getAttributes().get(attrIndex)).values()){
+				int numerator = 1;
+				int denominator = 1;
+				if(!attrName.equals(db.getAttributes().get(attrIndex))){
+					numerator = this.cf_t.getOccurrence(selectedAttrValue, attrmap.get(attrName).get(attrValue)) + 1;
+					denominator = this.cf_t.getOccurrence(selectedAttrValue, selectedAttrValue) + db.getAttributeValue(attrName).size();
+					
+				}else{
+					numerator = this.cf_t.getOccurrence(selectedAttrValue, selectedAttrValue) + 1;
+					denominator = db.rowCount() + db.getAttributeValue(attrName).size();
+				}
+				double prob = BigDecimal.valueOf(numerator/denominator).setScale(3, RoundingMode.HALF_UP).doubleValue();
+				tmp.put(attrmap.get(attrName).get(attrValue),prob);
+			}
+			this.probTable.put(attrName, tmp);
+			}
+		}
+	}
+	
+	public void predict(int attrIndex, MyDB db) throws IOException{
+		StringBuffer bf = new StringBuffer();
+		String s = "";
+		for(String attrName: db.getAttributes()){
+			s += attrName + " ";
+		}
+		s += "Classification\n";
+		bf.append(s);
+		int accurate = 0;
+		for(int row = 1; row < db.rowCount(); row++){
+			s = new String();
+			List<String> rowContent = db.getContent(row);
+			for(String dataItem: rowContent){
+				s += dataItem + " ";
+			}
+			String result = this.predict(rowContent, attrIndex, db.getAttributes());
+			if(rowContent.get(attrIndex).equals(result)){
+				accurate++;
+			}
+			s += result + "\n";
+			bf.append(s);
+		}
+		
+		s = "Accuracy: " + accurate + "/" + db.rowCount() + "\n";
+		bf.append(s);
+		
+		try(BufferedWriter bw = new BufferedWriter(new FileWriter("Result.txt"))){
+			bw.write(bf.toString());
+		}
+	}
+	
+	private String predict(List<String> items, int selectedIndex, List<String> attrs){
+		String selectedAttr = attrs.get(selectedIndex);
+		
+		Map<String, String> valueKeyPairs = new HashMap<>();
+		for(String key: this.attrmap.get(selectedAttr).keySet()){
+			valueKeyPairs.put(this.attrmap.get(selectedAttr).get(key), key);
+		}
+		
+		Map<String, Double> predMap = new HashMap<>();
+		for(String val: valueKeyPairs.values()){
+			double sum = 0.0, prob = 0.0;
+			for(int col = 0; col < items.size(); col++){
+				String convectedString = this.attrmap.get(attrs.get(col)).get(items.get(col));
+				if(!convectedString.isEmpty()){
+					prob = this.probTable.get(attrs.get(col)).get(convectedString);
+				}else{
+					int numerator = 1;
+					int denominator = this.cf_t.getOccurrence(selectedAttr, valueKeyPairs.get(val));
+					prob = BigDecimal.valueOf(numerator/denominator).setScale(3, RoundingMode.HALF_UP).doubleValue();
+				}
+				sum += Math.log(prob);
+			}
+			predMap.put(valueKeyPairs.get(val), sum);
+		}
+		
+		double prob = -1.00; String predictedValue = "";
+		for(String k: predMap.keySet()){
+			if(predMap.get(k) > prob){
+				prob = predMap.get(k);
+				predictedValue = k;
+			}
+		}
+		return predictedValue;
+		
+	}
+	
+	public MyDB readData(Scanner scan, String purpose){
+		while(true){
+			System.out.println("Please enter a " + purpose + " file:/n");
+			String filename = scan.next();
+			try {
+				MyDB db = new MyDB(filename);
+				return db;
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				System.out.println("Please double check your input file, we can not locate your file. \n");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	public static void main(String[] args) throws IOException{
+		Scanner scan = new Scanner(System.in);
+		NB_Classifier clf = new NB_Classifier();
+		MyDB training_DB = clf.readData(scan, "training");
+		MyDB test_DB = clf.readData(scan, "test");
+		System.out.println("Please choose an attribute (by number):/n");
+		training_DB.print_attrs();
+		int attrIndex = scan.nextInt();
+		clf.classifier_build(attrIndex, training_DB);
+		clf.prob_table_build(attrIndex, training_DB);
+		clf.predict(attrIndex, test_DB);
+	}
 }
