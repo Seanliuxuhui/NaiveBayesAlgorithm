@@ -24,6 +24,8 @@ public class CF_Tree {
 		if(cf_tree.get(firstAttr) != null){
 			if(cf_tree.get(firstAttr).get(secondAttr) != null){
 				return cf_tree.get(firstAttr).get(secondAttr); 
+			}else{
+				return 0;
 			}
 		}
 		return 0;

@@ -70,6 +70,7 @@ public class MyDB {
 			System.out.println(attrIndex + ". " + attr);
 			attrIndex++;
 		}
+		System.out.print("Attributes: ");
 	}
 	
 	public List<String> getContent(int rowIndex){
