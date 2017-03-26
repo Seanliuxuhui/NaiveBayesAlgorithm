@@ -86,7 +86,7 @@ public class NB_Classifier {
 			for(String dataItem: rowContent){
 				s += dataItem + " ";
 			}
-			String result = this.predict(rowContent, attrIndex, db.getAttributes());
+			String result = this.predict(rowContent, attrIndex, db.getAttributes(), db);
 			if(rowContent.get(attrIndex - 1).equals(result)){
 				accurate++;
 			}
@@ -105,7 +105,7 @@ public class NB_Classifier {
 		
 	}
 	
-	private String predict(List<String> items, int selectedIndex, List<String> attrs){
+	private String predict(List<String> items, int selectedIndex, List<String> attrs, MyDB db){
 		selectedIndex = selectedIndex - 1;
 		String selectedAttr = attrs.get(selectedIndex);
 		
@@ -122,8 +122,8 @@ public class NB_Classifier {
 				if(!convectedString.isEmpty()){
 					prob = this.probTable.get(key).get(attrs.get(col)).get(convectedString);
 				}else{
-					int numerator = 1;
-					int denominator = this.cf_t.getOccurrence(selectedAttr, key);
+					double numerator = 1.00;
+					double denominator = this.cf_t.getOccurrence(selectedAttr, key) + db.getAttributeValue(attrs.get(col)).size();
 					prob = BigDecimal.valueOf(numerator/denominator).setScale(3, RoundingMode.HALF_UP).doubleValue();
 				}
 				sum += Math.log(prob);
