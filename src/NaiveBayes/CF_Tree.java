@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CF_Tree {
-	private CF_Node node = null;
 	private Map<String, HashMap<String, Integer>> cf_tree = null;
 	public void initialize(){
 		cf_tree = new HashMap<String, HashMap<String, Integer>>();
@@ -29,8 +28,5 @@ public class CF_Tree {
 			}
 		}
 		return 0;
-	}
-	public void clear(){
-		
 	}
 }
