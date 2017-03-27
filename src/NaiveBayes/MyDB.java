@@ -17,6 +17,13 @@ public class MyDB {
 	public MyDB(String filename) throws FileNotFoundException, IOException{
 		this.readfile(filename);
 	}
+	
+	/**
+	 * process database 
+	 * @param filename
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
 	private void readfile(String filename) throws FileNotFoundException, IOException{
 		List<String> s = null;
 		try(BufferedReader br = new BufferedReader(new FileReader(filename))){
@@ -53,17 +60,34 @@ public class MyDB {
 		}
 	}
 	
+	/**
+	 * return distinct values of the given attributes
+	 * @param attr
+	 * @return
+	 */
 	public Set<String> getAttributeValue(String attr){
 		return this.attrValuePairs.get(attr);
 	}
+	
+	/**
+	 * return the number of rows 
+	 * @return
+	 */
 	public int rowCount(){
 		return dbContent.size() - 1;
 	}
 	
+	/**
+	 * return attributes names
+	 * @return
+	 */
 	public List<String> getAttributes(){
 		return dbContent.get(0);
 	}
 	
+	/**
+	 * print the attributes of the database
+	 */
 	public void print_attrs(){
 		int attrIndex = 1;
 		for(String attr: this.getAttributes()){
@@ -73,6 +97,11 @@ public class MyDB {
 		System.out.print("Attributes: ");
 	}
 	
+	/**
+	 * return the content of the given row
+	 * @param rowIndex
+	 * @return
+	 */
 	public List<String> getContent(int rowIndex){
 		return this.dbContent.get(rowIndex);
 	}

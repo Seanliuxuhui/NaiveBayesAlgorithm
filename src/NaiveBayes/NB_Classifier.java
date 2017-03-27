@@ -16,6 +16,12 @@ public class NB_Classifier {
 	private Map<String, HashMap<String, String>> attrmap = new HashMap<>(); 
 	private Map<String, HashMap<String, HashMap<String, Double>>> probTable = new Hashtable<>();
 	private CF_Tree cf_t = new CF_Tree();
+	/**
+	 * use training dataset to build a classifier tree, the leading node is the selected attributes, all its leaves
+	 * represent the occurrence count in the conditional probability assumption
+	 * @param attrIndex
+	 * @param db
+	 */
 	public void classifier_build(int attrIndex, MyDB db){
 		List<String> attrNames = db.getAttributes();
 		String selectedAttr = attrNames.get(attrIndex - 1);
@@ -45,6 +51,12 @@ public class NB_Classifier {
 			row++;
 		}
 	}
+	
+	/**
+	 * used the previous built cf_t object (Classifier tree) to count probability of P(ai|ci)
+	 * @param attrIndex
+	 * @param db
+	 */
 	public void prob_table_build(int attrIndex, MyDB db){
 		attrIndex = attrIndex - 1;
 		for(String selectedAttrValue: this.attrmap.get(db.getAttributes().get(attrIndex)).values()){
@@ -71,6 +83,13 @@ public class NB_Classifier {
 			}
 		}
 	
+	/**
+	 * use the probability table built in the prob_table_built phase to predict the 
+	 * test cases
+	 * @param attrIndex
+	 * @param db
+	 * @throws IOException
+	 */
 	public void predict(int attrIndex, MyDB db) throws IOException{
 		StringBuffer bf = new StringBuffer();
 		String s = "";
@@ -105,6 +124,15 @@ public class NB_Classifier {
 		
 	}
 	
+	/**
+	 * for each test case, retrieve P(ai|ci) for each value ai in the given row
+	 * Laplace smoothing technique is used here  
+	 * @param items
+	 * @param selectedIndex
+	 * @param attrs
+	 * @param db
+	 * @return
+	 */
 	private String predict(List<String> items, int selectedIndex, List<String> attrs, MyDB db){
 		selectedIndex = selectedIndex - 1;
 		String selectedAttr = attrs.get(selectedIndex);
@@ -142,6 +170,12 @@ public class NB_Classifier {
 		
 	}
 	
+	/**
+	 * prompt users for inputs
+	 * @param scan
+	 * @param purpose
+	 * @return
+	 */
 	public MyDB readData(Scanner scan, String purpose){
 		while(true){
 			try {
@@ -158,6 +192,12 @@ public class NB_Classifier {
 			}
 		}
 	}
+	
+	/**
+	 * main function
+	 * @param args
+	 * @throws IOException
+	 */
 	public static void main(String[] args) throws IOException{
 		Scanner scan = new Scanner(System.in);
 		NB_Classifier clf = new NB_Classifier();
